@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Invitación</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; }
+    body { background:#000; font-family: Arial, sans-serif; }
+
+    /* Imagen full pantalla, solo móvil */
+    .screen {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh; /* mejor en móviles modernos */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .img {
+      width: 100vw;
+      height: 100dvh;
+      object-fit: cover; /* llena la pantalla */
+      display:block;
+    }
+
+    /* Hotspot invisible sobre "acá" — ajustar */
+    .hotspot {
+      position: absolute;
+      /* AJUSTÁ ESTOS VALORES segun dónde esté el "acá" en tu imagen */
+      left: 40%;
+      top: 70%;
+      width: 20%;
+      height: 8%;
+      cursor: pointer;
+      background: rgba(255,255,255,0.0);
+    }
+
+    /* Modal */
+    .modal-bg {
+      position: fixed; inset:0;
+      background: rgba(0,0,0,0.6);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+    .modal {
+      width: 100%;
+      max-width: 420px;
+      background: #111;
+      color: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+    label { display:block; margin-top:10px; font-size:14px; opacity:0.9; }
+    input {
+      width:100%;
+      margin-top:6px;
+      padding:12px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background:#0b0b0b;
+      color:#fff;
+      box-sizing:border-box;
+      font-size:16px;
+    }
+    button {
+      width:100%;
+      margin-top:14px;
+      padding:12px;
+      border-radius: 12px;
+      border:none;
+      font-size:16px;
+      cursor:pointer;
+    }
+    .btn { background:#fff; color:#000; }
+    .btn2 { background:transparent; color:#fff; border:1px solid #444; }
+    .msg { margin-top:10px; font-size:14px; }
+  </style>
+</head>
+<body>
+
+  <div class="screen">
+    <img class="img" src="invitation.jpg" alt="Invitación" />
+    <div class="hotspot" id="openForm" aria-label="Confirmar asistencia"></div>
+  </div>
+
+  <div class="modal-bg" id="modal">
+    <div class="modal">
+      <h3 style="margin:0 0 10px 0;">Confirmá tu asistencia</h3>
+
+      <label>Nombre</label>
+      <input id="nombre" autocomplete="given-name" />
+
+      <label>Apellido</label>
+      <input id="apellido" autocomplete="family-name" />
+
+      <label>Restricción alimenticia (si no, poné “Ninguna”)</label>
+      <input id="restriccion" />
+
+      <button class="btn" id="send">Confirmar</button>
+      <button class="btn2" id="close" type="button">Cerrar</button>
+
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+
+<script>
+  const ENDPOINT = "PASTE_YOUR_WEB_APP_URL_HERE"; // <- pegá acá tu URL del Apps Script Web App
+
+  const modal = document.getElementById('modal');
+  const msg = document.getElementById('msg');
+
+  document.getElementById('openForm').addEventListener('click', () => {
+    msg.textContent = "";
+    modal.style.display = 'flex';
+  });
+
+  document.getElementById('close').addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+
+  document.getElementById('send').addEventListener('click', async () => {
+    const nombre = document.getElementById('nombre').value.trim();
+    const apellido = document.getElementById('apellido').value.trim();
+    const restriccion = document.getElementById('restriccion').value.trim();
+
+    if (!nombre || !apellido) {
+      msg.textContent = "Por favor completá Nombre y Apellido.";
+      return;
+    }
+
+    msg.textContent = "Enviando...";
+
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ nombre, apellido, restriccion })
+      });
+
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { ok:false, error:text }; }
+
+      if (!data.ok) throw new Error(data.error || "Error desconocido");
+
+      msg.textContent = "¡Listo! Quedaste confirmado ✅";
+      document.getElementById('nombre').value = "";
+      document.getElementById('apellido').value = "";
+      document.getElementById('restriccion').value = "";
+
+    } catch (e) {
+      msg.textContent = "No se pudo enviar. " + e.message;
+    }
+  });
+</script>
+</body>
+</html>
