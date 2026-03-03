@@ -12,32 +12,32 @@
       width: 100%;
       height: 100%;
       overflow: hidden; /* sin scroll */
-    }
-
-    body {
-      background: #000;
+      background: black;
       font-family: Arial, sans-serif;
     }
 
-    /* Full screen (mobile-first) */
+    /* Contenedor pantalla completa */
     .screen {
       position: fixed;
       inset: 0;
       width: 100vw;
-      height: 100dvh; /* mejor que 100vh en mobile */
-      overflow: hidden;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: black; /* relleno si sobran espacios */
     }
 
-    /* Imagen: llena pantalla */
+    /* Imagen completa sin recorte */
     .img {
       width: 100vw;
       height: 100dvh;
-      object-fit: cover; /* llena pantalla sin scroll */
+      object-fit: contain; /* 👈 NO corta */
       display: block;
     }
 
-    /* Hotspot invisible sobre el “acá”
-       AJUSTÁ estos valores hasta que el toque caiga justo sobre "acá" */
+    /* Hotspot invisible sobre "acá"
+       Ajustá estos valores hasta que coincida perfecto */
     .hotspot {
       position: absolute;
       left: 40%;
@@ -46,9 +46,10 @@
       height: 8%;
       cursor: pointer;
 
-      /* Para debug visual del hotspot (activar temporalmente):
-         background: rgba(255, 0, 0, 0.25); */
-      background: rgba(255, 255, 255, 0.0);
+      /* Para ver el área mientras ajustás:
+         background: rgba(255,0,0,0.25); */
+      background: rgba(255,255,255,0.0);
+
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -125,9 +126,7 @@
     .msg {
       margin-top: 10px;
       font-size: 14px;
-      opacity: 0.95;
       min-height: 18px;
-      word-break: break-word;
     }
 
     .small {
@@ -139,9 +138,10 @@
 </head>
 
 <body>
+
   <div class="screen">
     <img class="img" src="invitation.jpg" alt="Invitación" />
-    <div class="hotspot" id="openForm" aria-label="Confirmar asistencia"></div>
+    <div class="hotspot" id="openForm"></div>
   </div>
 
   <div class="modal-bg" id="modal">
@@ -149,88 +149,77 @@
       <h3>Confirmá tu asistencia</h3>
 
       <label>Nombre</label>
-      <input id="nombre" autocomplete="given-name" />
+      <input id="nombre" />
 
       <label>Apellido</label>
-      <input id="apellido" autocomplete="family-name" />
+      <input id="apellido" />
 
       <label>¿Tenés alguna restricción alimenticia?</label>
       <input id="restriccion" placeholder="Ej: Ninguna / Celíaco / Vegano..." />
 
       <button class="btn" id="send">Confirmar</button>
-      <button class="btn2" id="close" type="button">Cerrar</button>
+      <button class="btn2" id="close">Cerrar</button>
 
       <div class="msg" id="msg"></div>
       <div class="small">Tus datos se guardan para la organización del evento.</div>
     </div>
   </div>
 
-  <script>
-    // Tu Web App URL (Apps Script)
-    const ENDPOINT = "https://script.google.com/macros/s/AKfycbxg6JRoaTD9_g1tsXPMGu4qZ8wcO8NNw6LK_b7ivtKBd9TspH2L6lrywDdzYvpd5uPJKQ/exec";
+<script>
+  const ENDPOINT = "https://script.google.com/macros/s/AKfycbxg6JRoaTD9_g1tsXPMGu4qZ8wcO8NNw6LK_b7ivtKBd9TspH2L6lrywDdzYvpd5uPJKQ/exec";
 
-    const modal = document.getElementById('modal');
-    const msg = document.getElementById('msg');
+  const modal = document.getElementById('modal');
+  const msg = document.getElementById('msg');
 
-    const nombreEl = document.getElementById('nombre');
-    const apellidoEl = document.getElementById('apellido');
-    const restriccionEl = document.getElementById('restriccion');
+  document.getElementById('openForm').addEventListener('click', () => {
+    msg.textContent = "";
+    modal.style.display = 'flex';
+  });
 
-    document.getElementById('openForm').addEventListener('click', () => {
-      msg.textContent = "";
-      modal.style.display = 'flex';
-      setTimeout(() => nombreEl.focus(), 50);
-    });
+  document.getElementById('close').addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
 
-    document.getElementById('close').addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
+  document.getElementById('send').addEventListener('click', async () => {
+    const nombre = document.getElementById('nombre').value.trim();
+    const apellido = document.getElementById('apellido').value.trim();
+    const restriccion = document.getElementById('restriccion').value.trim();
 
-    // Cerrar tocando fuera del modal
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.style.display = 'none';
-    });
+    if (!nombre || !apellido) {
+      msg.textContent = "Completá Nombre y Apellido 🙏";
+      return;
+    }
 
-    document.getElementById('send').addEventListener('click', async () => {
-      const nombre = nombreEl.value.trim();
-      const apellido = apellidoEl.value.trim();
-      const restriccion = restriccionEl.value.trim();
+    msg.textContent = "Enviando...";
 
-      if (!nombre || !apellido) {
-        msg.textContent = "Completá Nombre y Apellido 🙏";
-        return;
-      }
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: 'POST',
+        body: JSON.stringify({ nombre, apellido, restriccion })
+      });
 
-      msg.textContent = "Enviando...";
+      const text = await res.text();
+      console.log("STATUS:", res.status, "BODY:", text);
 
-      try {
-        // ✅ Cambio clave: SIN headers para evitar preflight/CORS raros → evita 405 en muchos casos
-        const res = await fetch(ENDPOINT, {
-          method: 'POST',
-          body: JSON.stringify({ nombre, apellido, restriccion })
-        });
+      let data;
+      try { data = JSON.parse(text); }
+      catch { data = { ok: false, error: text }; }
 
-        const text = await res.text();
-        console.log("DEBUG STATUS:", res.status, "DEBUG BODY:", text);
+      if (!data.ok) throw new Error(data.error || "Error desconocido");
 
-        let data;
-        try { data = JSON.parse(text); }
-        catch { data = { ok: false, error: text }; }
+      msg.textContent = "¡Listo! Quedaste confirmado ✅";
 
-        if (!data.ok) throw new Error(data.error || "Error desconocido");
+      document.getElementById('nombre').value = "";
+      document.getElementById('apellido').value = "";
+      document.getElementById('restriccion').value = "";
 
-        msg.textContent = "¡Listo! Quedaste confirmado ✅";
+      setTimeout(() => { modal.style.display = 'none'; }, 1200);
 
-        nombreEl.value = "";
-        apellidoEl.value = "";
-        restriccionEl.value = "";
+    } catch (e) {
+      msg.textContent = "No se pudo enviar: " + e.message;
+    }
+  });
+</script>
 
-        setTimeout(() => { modal.style.display = 'none'; }, 1200);
-
-      } catch (e) {
-        msg.textContent = "No se pudo enviar: " + (e && e.message ? e.message : String(e));
-      }
-    });
-  </script>
 </body>
 </html>
