@@ -19,12 +19,12 @@
       font-family: Arial, sans-serif;
     }
 
-    /* Full screen (solo mobile) */
+    /* Full screen (mobile-first) */
     .screen {
       position: fixed;
       inset: 0;
       width: 100vw;
-      height: 100dvh; /* mejor que 100vh para móviles */
+      height: 100dvh; /* mejor que 100vh en mobile */
       overflow: hidden;
     }
 
@@ -46,7 +46,7 @@
       height: 8%;
       cursor: pointer;
 
-      /* Para debug: ponelo en 0.25 para ver el rectángulo
+      /* Para debug visual del hotspot (activar temporalmente):
          background: rgba(255, 0, 0, 0.25); */
       background: rgba(255, 255, 255, 0.0);
       -webkit-tap-highlight-color: transparent;
@@ -127,6 +127,7 @@
       font-size: 14px;
       opacity: 0.95;
       min-height: 18px;
+      word-break: break-word;
     }
 
     .small {
@@ -171,9 +172,14 @@
     const modal = document.getElementById('modal');
     const msg = document.getElementById('msg');
 
+    const nombreEl = document.getElementById('nombre');
+    const apellidoEl = document.getElementById('apellido');
+    const restriccionEl = document.getElementById('restriccion');
+
     document.getElementById('openForm').addEventListener('click', () => {
       msg.textContent = "";
       modal.style.display = 'flex';
+      setTimeout(() => nombreEl.focus(), 50);
     });
 
     document.getElementById('close').addEventListener('click', () => {
@@ -186,9 +192,9 @@
     });
 
     document.getElementById('send').addEventListener('click', async () => {
-      const nombre = document.getElementById('nombre').value.trim();
-      const apellido = document.getElementById('apellido').value.trim();
-      const restriccion = document.getElementById('restriccion').value.trim();
+      const nombre = nombreEl.value.trim();
+      const apellido = apellidoEl.value.trim();
+      const restriccion = restriccionEl.value.trim();
 
       if (!nombre || !apellido) {
         msg.textContent = "Completá Nombre y Apellido 🙏";
@@ -198,29 +204,31 @@
       msg.textContent = "Enviando...";
 
       try {
+        // ✅ Cambio clave: SIN headers para evitar preflight/CORS raros → evita 405 en muchos casos
         const res = await fetch(ENDPOINT, {
           method: 'POST',
-          // Apps Script suele funcionar mejor así (evita quilombos de CORS/JSON)
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ nombre, apellido, restriccion })
         });
 
         const text = await res.text();
+        console.log("DEBUG STATUS:", res.status, "DEBUG BODY:", text);
+
         let data;
-        try { data = JSON.parse(text); } catch { data = { ok: false, error: text }; }
+        try { data = JSON.parse(text); }
+        catch { data = { ok: false, error: text }; }
 
         if (!data.ok) throw new Error(data.error || "Error desconocido");
 
         msg.textContent = "¡Listo! Quedaste confirmado ✅";
 
-        document.getElementById('nombre').value = "";
-        document.getElementById('apellido').value = "";
-        document.getElementById('restriccion').value = "";
+        nombreEl.value = "";
+        apellidoEl.value = "";
+        restriccionEl.value = "";
 
         setTimeout(() => { modal.style.display = 'none'; }, 1200);
 
       } catch (e) {
-        msg.textContent = "No se pudo enviar: " + e.message;
+        msg.textContent = "No se pudo enviar: " + (e && e.message ? e.message : String(e));
       }
     });
   </script>
