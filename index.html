@@ -11,12 +11,11 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden; /* sin scroll */
-      background: black;
+      overflow: hidden;
+      background: white; /* 👈 cambiado a blanco */
       font-family: Arial, sans-serif;
     }
 
-    /* Contenedor pantalla completa */
     .screen {
       position: fixed;
       inset: 0;
@@ -25,19 +24,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: black; /* relleno si sobran espacios */
+      background: white; /* 👈 relleno blanco */
     }
 
-    /* Imagen completa sin recorte */
     .img {
       width: 100vw;
       height: 100dvh;
-      object-fit: contain; /* 👈 NO corta */
+      object-fit: contain; /* no corta la imagen */
       display: block;
+      background: white; /* 👈 por seguridad */
     }
 
-    /* Hotspot invisible sobre "acá"
-       Ajustá estos valores hasta que coincida perfecto */
     .hotspot {
       position: absolute;
       left: 40%;
@@ -45,15 +42,10 @@
       width: 20%;
       height: 8%;
       cursor: pointer;
-
-      /* Para ver el área mientras ajustás:
-         background: rgba(255,0,0,0.25); */
       background: rgba(255,255,255,0.0);
-
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Modal */
     .modal-bg {
       position: fixed;
       inset: 0;
